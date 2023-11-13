@@ -1,49 +1,48 @@
+import sqlite3
+from pathlib import Path
 from .singleton import SingletonMeta
-from .service import Service
-from .note import Note
-from .database_access import DatabaseAccess
-from . import service_daf
-from . import note_daf
-
+from .service_dao import Service, ServiceDAO
+from .note_dao import Note, NoteDAO
 
 
 class DatabaseManager(metaclass=SingletonMeta):
     """A class that manage the storage of the Web Service's
     login data into a sql database."""
 
-    dao: DatabaseAccess
+    conn: sqlite3.Connection
+    cursor: sqlite3.Cursor
+    service_dao: ServiceDAO
+    note_dao: NoteDAO
 
-    def __init__(self, dao: DatabaseAccess) -> None:
-        self.dao = dao
-        dao.open()
-        note_daf.init_note_table(dao=self.dao)
-        service_daf.init_service_table(dao=self.dao)
+    def __init__(self, filepath: Path) -> None:
+        self.conn = sqlite3.connect(filepath)
+        self.cursor = self.conn.cursor()
+        self.service_dao = ServiceDAO(self.cursor)
+        self.note_dao = NoteDAO(self.cursor)
 
-    def add_service(self, service: Service) -> bool:
-        return service_daf.add_service(service, dao=self.dao)
-            
-    def add_note(self, serviceId: int, note: Note) -> bool:
-        return note_daf.add_note(serviceId, note, dao=self.dao)
+        self.service_dao.init_table()
+        self.note_dao.init_table()
 
-    def update_service(self, service: Service) -> bool:
-        return service_daf.update_service(service, dao=self.dao)
-        
-    def update_note(self, note: Note) -> bool:
-        return note_daf.update_note(note, dao=self.dao)
+    def add_service(self, service: Service) -> None:
+        return self.service_dao.add_service(service)
 
-    def remove_service(self, id: str) -> bool:
-        note_daf.remove_all_notes(id, dao=self.dao)
-        return service_daf.remove_service(id, dao=self.dao)
-    
-    def remove_note(self, id: str) -> bool:
-        return note_daf.remove_note(id, dao=self.dao)
+    def update_service(self, service: Service) -> None:
+        return self.service_dao.update_service(service)
 
-    def services_encrypted(self) -> list[Service]:
-        return service_daf.services(dao=self.dao)
-        
-    def services_decrypted(self) -> list[Service]:
-        services = self.services_encrypted()
-        for service in services:
-            # service.decrypt(self.dao.key)
-            pass
-        return services
+    def remove_service(self, id: int) -> None:
+        return self.service_dao.remove_service(id)
+
+    def services(self) -> list[Service]:
+        return self.service_dao.services()
+
+    def add_note_in_service(self, service_id: int, note: Note) -> None:
+        return self.note_dao.add_note_in_service(service_id, note)
+
+    def remove_note(self, id: int) -> None:
+        return self.note_dao.remove_note(id)
+
+    def remove_notes_for_service(self, service_id: int) -> None:
+        return self.note_dao.remove_notes_for_service(service_id)
+
+    def notes(self, service_id: int) -> list[Note]:
+        return self.note_dao.notes(service_id)

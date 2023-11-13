@@ -4,7 +4,6 @@ import os
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from password_manager.src.core.database_manager import DatabaseManager
-from password_manager.src.core.database_access import DatabaseAccess
 
 
 @pytest.fixture(scope="session")
@@ -22,8 +21,7 @@ def key() -> bytes:
 
 
 @pytest.fixture(scope="session")
-def database_manager(tmp_path_factory: pytest.TempPathFactory) -> DatabaseAccess:
+def database_manager(tmp_path_factory: pytest.TempPathFactory) -> DatabaseManager:
     """Create Database Manager Object"""
     filepath = tmp_path_factory.mktemp("data") / "database.db"
-    database_access = DatabaseAccess(filepath, trace=True)
-    return DatabaseManager(database_access)
+    return DatabaseManager(filepath)

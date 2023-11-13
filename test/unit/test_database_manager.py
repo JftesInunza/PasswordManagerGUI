@@ -13,7 +13,7 @@ def new_service() -> Service:
 
 
 def test_add_service(database_manager: DatabaseManager, new_service: Service):
-    result = database_manager.add_service(new_service)
-    services = database_manager.services_encrypted()
-    assert result == True
+    database_manager.add_service(new_service)
+    services = database_manager.services()
+    assert len(services) == 1
     assert services == [new_service]
